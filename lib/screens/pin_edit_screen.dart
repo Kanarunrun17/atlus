@@ -1,14 +1,16 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../db/database.dart';
 import '../models/pin_enums.dart';
 import '../providers/pins_provider.dart';
 
 /// ピン編集・新規作成画面（共通）。
-/// [pinId] が null の場合は新規作成。新規作成時は [initialLat]/[initialLng]
-/// に地図ロングタップ座標が渡される。
+/// [pinId] が null の場合は新規作成、それ以外は編集モード。
+/// 新規作成時は [initialLat]/[initialLng] に地図ロングタップ座標が渡される。
 /// ※写真機能は後続コミットで追加する。
 class PinEditScreen extends ConsumerStatefulWidget {
   const PinEditScreen({
@@ -39,11 +41,29 @@ class _PinEditScreenState extends ConsumerState<PinEditScreen> {
   DateTime? _visitedAt;
   bool _saving = false;
 
+  /// 編集モードで読み込んだ既存ピン（id/座標/作成日時/写真の引き継ぎに使う）。
+  Pin? _original;
+
+  /// 編集モードでフォーム初期値を一度だけ流し込むためのフラグ。
+  bool _seeded = false;
+
   @override
   void dispose() {
     _nameController.dispose();
     _commentController.dispose();
     super.dispose();
+  }
+
+  /// 既存ピンの値をフォームへ反映する（編集モードで一度だけ実行）。
+  void _seedFrom(Pin pin) {
+    _original = pin;
+    _nameController.text = pin.name;
+    _commentController.text = pin.comment ?? '';
+    _kind = PinKind.fromValue(pin.kind);
+    _proposer = Proposer.fromValue(pin.proposer);
+    _rating = pin.rating;
+    _visitedAt = pin.visitedAt;
+    _seeded = true;
   }
 
   Future<void> _pickVisitedAt() async {
@@ -62,37 +82,86 @@ class _PinEditScreenState extends ConsumerState<PinEditScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final lat = widget.initialLat;
-    final lng = widget.initialLng;
-    if (lat == null || lng == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('座標が指定されていません')),
-      );
-      return;
-    }
+    final comment = _commentController.text.trim();
+    final repo = ref.read(pinRepositoryProvider);
 
     setState(() => _saving = true);
-    final comment = _commentController.text.trim();
-    await ref.read(pinRepositoryProvider).create(
-          latitude: lat,
-          longitude: lng,
-          name: _nameController.text.trim(),
-          kind: _kind.value,
-          proposer: _proposer.value,
-          rating: _rating,
-          comment: comment.isEmpty ? null : comment,
-          visitedAt: _visitedAt,
-        );
 
-    if (!mounted) return;
-    // 地図画面（ホーム）へ戻る。
-    context.go('/');
+    if (widget.isNew) {
+      final lat = widget.initialLat;
+      final lng = widget.initialLng;
+      if (lat == null || lng == null) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('座標が指定されていません')),
+        );
+        return;
+      }
+      await repo.create(
+        latitude: lat,
+        longitude: lng,
+        name: _nameController.text.trim(),
+        kind: _kind.value,
+        proposer: _proposer.value,
+        rating: _rating,
+        comment: comment.isEmpty ? null : comment,
+        visitedAt: _visitedAt,
+      );
+      if (!mounted) return;
+      // 新規作成は地図画面（ホーム）へ戻る。
+      context.go('/');
+    } else {
+      // 編集：既存ピンの不変項目（座標・作成日時・写真）は維持して更新する。
+      final updated = _original!.copyWith(
+        name: _nameController.text.trim(),
+        kind: _kind.value,
+        proposer: _proposer.value,
+        rating: Value(_rating),
+        comment: Value(comment.isEmpty ? null : comment),
+        visitedAt: Value(_visitedAt),
+      );
+      await repo.update(updated);
+      if (!mounted) return;
+      // 編集は詳細画面へ戻る。
+      context.go('/pin/${widget.pinId}');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final title = widget.isNew ? 'ピンを追加' : 'ピンを編集';
+
+    // 編集モードは既存ピンの読み込み完了を待ってからフォームを表示する。
+    if (!widget.isNew && !_seeded) {
+      final pinAsync = ref.watch(pinByIdProvider(widget.pinId!));
+      return pinAsync.when(
+        loading: () => Scaffold(
+          appBar: AppBar(title: Text(title)),
+          body: const Center(child: CircularProgressIndicator()),
+        ),
+        error: (e, _) => Scaffold(
+          appBar: AppBar(title: Text(title)),
+          body: Center(child: Text('読み込みエラー: $e')),
+        ),
+        data: (pin) {
+          if (pin == null) {
+            return Scaffold(
+              appBar: AppBar(title: Text(title)),
+              body: const Center(child: Text('ピンが見つかりません')),
+            );
+          }
+          _seedFrom(pin);
+          return _buildForm(context, title);
+        },
+      );
+    }
+
+    return _buildForm(context, title);
+  }
+
+  Widget _buildForm(BuildContext context, String title) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.isNew ? 'ピン新規作成' : 'ピン編集')),
+      appBar: AppBar(title: Text(title)),
       body: Form(
         key: _formKey,
         child: ListView(

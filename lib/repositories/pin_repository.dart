@@ -51,6 +51,13 @@ class PinRepository {
         );
   }
 
+  /// 既存ピンを更新する。updatedAt は現在時刻に自動更新する。
+  Future<bool> update(Pin pin) {
+    return _db.update(_db.pins).replace(
+          pin.copyWith(updatedAt: DateTime.now()),
+        );
+  }
+
   /// 既存ピンを削除する。
   Future<int> delete(int id) {
     return (_db.delete(_db.pins)..where((t) => t.id.equals(id))).go();
