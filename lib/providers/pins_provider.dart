@@ -13,3 +13,8 @@ final pinRepositoryProvider = Provider<PinRepository>((ref) {
 final pinsProvider = StreamProvider<List<Pin>>((ref) {
   return ref.watch(pinRepositoryProvider).watchAll();
 });
+
+/// 指定 id のピンを監視する StreamProvider。存在しない場合は null を流す。
+final pinByIdProvider = StreamProvider.family<Pin?, int>((ref, id) {
+  return ref.watch(pinRepositoryProvider).watchById(id);
+});
