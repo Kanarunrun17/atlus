@@ -7,11 +7,12 @@ import 'package:intl/intl.dart';
 import '../db/database.dart';
 import '../models/pin_enums.dart';
 import '../providers/pins_provider.dart';
+import '../utils/image_utils.dart';
+import '../widgets/pin_photo_view.dart';
 
 /// ピン編集・新規作成画面（共通）。
 /// [pinId] が null の場合は新規作成、それ以外は編集モード。
 /// 新規作成時は [initialLat]/[initialLng] に地図ロングタップ座標が渡される。
-/// ※写真機能は後続コミットで追加する。
 class PinEditScreen extends ConsumerStatefulWidget {
   const PinEditScreen({
     super.key,
@@ -39,7 +40,9 @@ class _PinEditScreenState extends ConsumerState<PinEditScreen> {
   Proposer _proposer = Proposer.me;
   int? _rating;
   DateTime? _visitedAt;
+  String? _photoBase64;
   bool _saving = false;
+  bool _pickingPhoto = false;
 
   /// 編集モードで読み込んだ既存ピン（id/座標/作成日時/写真の引き継ぎに使う）。
   Pin? _original;
@@ -63,7 +66,30 @@ class _PinEditScreenState extends ConsumerState<PinEditScreen> {
     _proposer = Proposer.fromValue(pin.proposer);
     _rating = pin.rating;
     _visitedAt = pin.visitedAt;
+    _photoBase64 = pin.photoBase64;
     _seeded = true;
+  }
+
+  Future<void> _pickPhoto() async {
+    setState(() => _pickingPhoto = true);
+    try {
+      final result = await selectAndCompressImage();
+      if (!mounted) return;
+      if (result == null) return; // キャンセル
+      if (!result.isSuccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.error!)),
+        );
+        return;
+      }
+      setState(() => _photoBase64 = result.base64);
+    } finally {
+      if (mounted) setState(() => _pickingPhoto = false);
+    }
+  }
+
+  void _removePhoto() {
+    setState(() => _photoBase64 = null);
   }
 
   Future<void> _pickVisitedAt() async {
@@ -105,6 +131,7 @@ class _PinEditScreenState extends ConsumerState<PinEditScreen> {
         proposer: _proposer.value,
         rating: _rating,
         comment: comment.isEmpty ? null : comment,
+        photoBase64: _photoBase64,
         visitedAt: _visitedAt,
       );
       if (!mounted) return;
@@ -118,6 +145,7 @@ class _PinEditScreenState extends ConsumerState<PinEditScreen> {
         proposer: _proposer.value,
         rating: Value(_rating),
         comment: Value(comment.isEmpty ? null : comment),
+        photoBase64: Value(_photoBase64),
         visitedAt: Value(_visitedAt),
       );
       await repo.update(updated);
@@ -176,6 +204,17 @@ class _PinEditScreenState extends ConsumerState<PinEditScreen> {
               textInputAction: TextInputAction.next,
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? '場所名を入力してください' : null,
+            ),
+            const SizedBox(height: 24),
+
+            // 写真（任意）
+            const Text('写真', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            _PhotoField(
+              base64: _photoBase64,
+              picking: _pickingPhoto,
+              onPick: _pickPhoto,
+              onRemove: _removePhoto,
             ),
             const SizedBox(height: 24),
 
@@ -288,6 +327,65 @@ class _PinEditScreenState extends ConsumerState<PinEditScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 写真の選択・プレビュー・削除を行うフォーム部品。
+class _PhotoField extends StatelessWidget {
+  const _PhotoField({
+    required this.base64,
+    required this.picking,
+    required this.onPick,
+    required this.onRemove,
+  });
+
+  final String? base64;
+  final bool picking;
+  final VoidCallback onPick;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = decodeBase64Image(base64);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (bytes != null) ...[
+          // プレビュー（固定3:2・タップで再選択）。
+          PinPhotoThumbnail(
+            bytes: bytes,
+            onTap: picking ? null : onPick,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: picking ? null : onPick,
+                icon: const Icon(Icons.photo_library),
+                label: const Text('写真を変更'),
+              ),
+              TextButton.icon(
+                onPressed: picking ? null : onRemove,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('写真を削除'),
+              ),
+            ],
+          ),
+        ] else
+          OutlinedButton.icon(
+            onPressed: picking ? null : onPick,
+            icon: picking
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.add_a_photo),
+            label: Text(picking ? '処理中…' : '写真を選択'),
+          ),
+      ],
     );
   }
 }

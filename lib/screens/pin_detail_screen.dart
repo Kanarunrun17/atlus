@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import '../db/database.dart';
 import '../models/pin_enums.dart';
 import '../providers/pins_provider.dart';
+import '../utils/image_utils.dart';
+import '../widgets/pin_photo_view.dart';
 
 /// ピン詳細画面（F5）。:id のピンを表示し、編集・削除への導線を持つ。
 class PinDetailScreen extends ConsumerWidget {
@@ -83,6 +85,7 @@ class _PinDetailBody extends StatelessWidget {
     final visitedText = pin.visitedAt == null
         ? '未訪問'
         : DateFormat('yyyy/MM/dd').format(pin.visitedAt!);
+    final photoBytes = decodeBase64Image(pin.photoBase64);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -93,6 +96,15 @@ class _PinDetailBody extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 12),
+
+        // 写真（あれば）：場所名の下、kindバッジの上。タップで拡大。
+        if (photoBytes != null) ...[
+          PinPhotoThumbnail(
+            bytes: photoBytes,
+            onTap: () => PinPhotoDialog.show(context, photoBytes),
+          ),
+          const SizedBox(height: 16),
+        ],
 
         // kind バッジ
         Row(

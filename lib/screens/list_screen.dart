@@ -63,6 +63,11 @@ class _PinListTile extends StatelessWidget {
             const Icon(Icons.star, color: Colors.amber, size: 16),
             Text('${pin.rating}'),
           ],
+          // 写真があることだけを示す（一覧では画像は描画しない）。
+          if (pin.photoBase64 != null && pin.photoBase64!.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            const Icon(Icons.photo_camera, size: 16, color: Colors.grey),
+          ],
         ],
       ),
       // 提案者バッジ（M/P）
