@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../db/database.dart';
 import '../models/anniversary_countdown.dart';
 import '../providers/anniversaries_provider.dart';
+import '../theme/app_colors.dart';
 
 /// 記念日画面（タブ・F8）。記念日一覧とカウントダウンを表示する。
 class AnniversaryScreen extends ConsumerWidget {
@@ -110,12 +111,12 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.celebration, size: 64, color: Colors.grey),
+          const Icon(Icons.celebration, size: 64, color: AppColors.lavender),
           const SizedBox(height: 16),
           const Text('記念日を追加しよう', style: TextStyle(fontSize: 18)),
           const SizedBox(height: 8),
           const Text('右下の＋ボタンから追加できます',
-              style: TextStyle(color: Colors.grey)),
+              style: TextStyle(color: AppColors.textLight)),
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: onAdd,
@@ -166,11 +167,10 @@ class _AnniversaryCard extends StatelessWidget {
         return false;
       },
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: ListTile(
           onTap: onTap,
           onLongPress: onDelete,
-          leading: const Icon(Icons.favorite, color: Colors.pink),
+          leading: const Icon(Icons.favorite, color: AppColors.primaryPink),
           title: Text(
             anniversary.title,
             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -180,7 +180,7 @@ class _AnniversaryCard extends StatelessWidget {
               Text(dateText),
               if (anniversary.recurring) ...[
                 const SizedBox(width: 6),
-                const Icon(Icons.repeat, size: 14, color: Colors.grey),
+                const Icon(Icons.repeat, size: 14, color: AppColors.textLight),
               ],
             ],
           ),
@@ -190,7 +190,7 @@ class _AnniversaryCard extends StatelessWidget {
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: countdown.days == 0
-                  ? Colors.pink
+                  ? AppColors.peach
                   : Theme.of(context).colorScheme.primary,
             ),
           ),

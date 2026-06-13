@@ -172,7 +172,6 @@ class _PinEditScreenState extends ConsumerState<PinEditScreen> {
               controller: _nameController,
               decoration: const InputDecoration(
                 labelText: '場所名 *',
-                border: OutlineInputBorder(),
               ),
               textInputAction: TextInputAction.next,
               validator: (v) =>
@@ -244,7 +243,6 @@ class _PinEditScreenState extends ConsumerState<PinEditScreen> {
               controller: _commentController,
               decoration: const InputDecoration(
                 labelText: 'コメント',
-                border: OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
               maxLines: 4,
