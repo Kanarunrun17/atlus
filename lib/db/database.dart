@@ -17,7 +17,14 @@ class AppDatabase extends _$AppDatabase {
 
   static QueryExecutor _openConnection() {
     // drift_flutter がプラットフォームに応じた接続を提供する。
-    // Web の場合は SQLite WASM + IndexedDB が使われる。
-    return driftDatabase(name: 'atlus');
+    // Web では web/ に配置した SQLite WASM + drift worker を使い、
+    // データは IndexedDB に保存される。
+    return driftDatabase(
+      name: 'atlus',
+      web: DriftWebOptions(
+        sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+        driftWorker: Uri.parse('drift_worker.js'),
+      ),
+    );
   }
 }

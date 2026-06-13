@@ -50,7 +50,11 @@ final appRouter = GoRouter(
     // 補助画面（タブの外）。
     GoRoute(
       path: '/pin/new',
-      builder: (context, state) => const PinEditScreen(),
+      builder: (context, state) {
+        final lat = double.tryParse(state.uri.queryParameters['lat'] ?? '');
+        final lng = double.tryParse(state.uri.queryParameters['lng'] ?? '');
+        return PinEditScreen(initialLat: lat, initialLng: lng);
+      },
     ),
     GoRoute(
       path: '/pin/:id/edit',
