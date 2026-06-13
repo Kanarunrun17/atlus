@@ -15,6 +15,17 @@ class PinRepository {
         .watch();
   }
 
+  /// 全ピンを一覧表示用の並びで監視する。
+  /// 訪問日(visitedAt)の降順、null は末尾、同条件では更新日時(updatedAt)の降順。
+  Stream<List<Pin>> watchAllSorted() {
+    return (_db.select(_db.pins)
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.visitedAt, nulls: NullsOrder.last),
+            (t) => OrderingTerm.desc(t.updatedAt),
+          ]))
+        .watch();
+  }
+
   /// 単一ピンを監視する。
   Stream<Pin?> watchById(int id) {
     return (_db.select(_db.pins)..where((t) => t.id.equals(id)))

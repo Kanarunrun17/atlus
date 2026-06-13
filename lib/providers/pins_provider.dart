@@ -14,6 +14,12 @@ final pinsProvider = StreamProvider<List<Pin>>((ref) {
   return ref.watch(pinRepositoryProvider).watchAll();
 });
 
+/// 一覧画面用にソート済みのピンを監視する StreamProvider。
+/// 並び順は PinRepository.watchAllSorted を参照。
+final sortedPinsProvider = StreamProvider<List<Pin>>((ref) {
+  return ref.watch(pinRepositoryProvider).watchAllSorted();
+});
+
 /// 指定 id のピンを監視する StreamProvider。存在しない場合は null を流す。
 final pinByIdProvider = StreamProvider.family<Pin?, int>((ref, id) {
   return ref.watch(pinRepositoryProvider).watchById(id);
