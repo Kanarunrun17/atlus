@@ -181,7 +181,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             TileLayer(
               urlTemplate: MapConstants.tileUrlTemplate,
               subdomains: MapConstants.tileSubdomains,
-              userAgentPackageName: 'jp.co.starx.atlus',
+              userAgentPackageName: 'dev.kanarunrun.atlus',
               tileProvider: NetworkTileProvider(),
             ),
             // 検索した行政区域の境界線（Marker の下に置きピンを隠さない）。
