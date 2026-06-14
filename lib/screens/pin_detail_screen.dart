@@ -36,7 +36,22 @@ class PinDetailScreen extends ConsumerWidget {
 
     if (ok != true) return;
     await ref.read(pinRepositoryProvider).delete(pinId);
-    if (context.mounted) context.go('/');
+    if (!context.mounted) return;
+    // 呼び出し元（一覧 or 地図）へ戻る。
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/');
+    }
+  }
+
+  /// 呼び出し元へ戻る。スタックがなければ地図（ホーム）へ。
+  void _goBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/');
+    }
   }
 
   @override
@@ -45,12 +60,17 @@ class PinDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: '戻る',
+          onPressed: () => _goBack(context),
+        ),
         title: const Text('ピン詳細'),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
             tooltip: '編集',
-            onPressed: () => context.go('/pin/$pinId/edit'),
+            onPressed: () => context.push('/pin/$pinId/edit'),
           ),
           IconButton(
             icon: const Icon(Icons.delete),

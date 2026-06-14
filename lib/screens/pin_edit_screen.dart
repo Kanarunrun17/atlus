@@ -135,8 +135,12 @@ class _PinEditScreenState extends ConsumerState<PinEditScreen> {
         visitedAt: _visitedAt,
       );
       if (!mounted) return;
-      // 新規作成は地図画面（ホーム）へ戻る。
-      context.go('/');
+      // 新規作成は呼び出し元（地図）へ戻る。
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/');
+      }
     } else {
       // 編集：既存ピンの不変項目（座標・作成日時・写真）は維持して更新する。
       final updated = _original!.copyWith(
@@ -150,8 +154,12 @@ class _PinEditScreenState extends ConsumerState<PinEditScreen> {
       );
       await repo.update(updated);
       if (!mounted) return;
-      // 編集は詳細画面へ戻る。
-      context.go('/pin/${widget.pinId}');
+      // 編集は呼び出し元（詳細画面）へ戻る。詳細は StreamProvider で自動更新される。
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/pin/${widget.pinId}');
+      }
     }
   }
 

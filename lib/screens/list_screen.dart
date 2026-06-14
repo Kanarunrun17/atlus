@@ -83,7 +83,7 @@ class _PinListTile extends StatelessWidget {
           ),
         ),
       ),
-      onTap: () => context.go('/pin/${pin.id}'),
+      onTap: () => context.push('/pin/${pin.id}'),
     );
   }
 }

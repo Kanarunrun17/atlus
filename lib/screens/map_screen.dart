@@ -21,7 +21,7 @@ class MapScreen extends ConsumerWidget {
 
   void _onLongPress(BuildContext context, LatLng point) {
     // 新規作成画面へ座標を渡して遷移する。
-    context.go('/pin/new?lat=${point.latitude}&lng=${point.longitude}');
+    context.push('/pin/new?lat=${point.latitude}&lng=${point.longitude}');
   }
 
   @override
@@ -51,7 +51,7 @@ class MapScreen extends ConsumerWidget {
                 child: _PinMarker(
                   kind: PinKind.fromValue(pin.kind),
                   proposer: Proposer.fromValue(pin.proposer),
-                  onTap: () => context.go('/pin/${pin.id}'),
+                  onTap: () => context.push('/pin/${pin.id}'),
                 ),
               ),
           ],
