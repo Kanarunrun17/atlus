@@ -5,19 +5,16 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../constants/map_constants.dart';
 import '../db/database.dart';
 import '../models/pin_enums.dart';
 import '../providers/pins_provider.dart';
 
 /// 地図画面（ホーム・タブ）。
-/// F1：OpenStreetMap タイル表示、F2：ロングタップでピン追加、
-/// F3：kind による色分け、F4：proposer バッジ表示。
+/// F1：地図表示（CartoDB Positron・関東圏に範囲制限）、
+/// F2：ロングタップでピン追加、F3：kind による色分け、F4：proposer バッジ表示。
 class MapScreen extends ConsumerWidget {
   const MapScreen({super.key});
-
-  /// 初期表示の中心（東京駅周辺）。
-  static const _initialCenter = LatLng(35.6762, 139.6503);
-  static const _initialZoom = 10.0;
 
   void _onLongPress(BuildContext context, LatLng point) {
     // 新規作成画面へ座標を渡して遷移する。
@@ -30,13 +27,22 @@ class MapScreen extends ConsumerWidget {
 
     return FlutterMap(
       options: MapOptions(
-        initialCenter: _initialCenter,
-        initialZoom: _initialZoom,
+        initialCenter: MapConstants.initialCenter,
+        initialZoom: MapConstants.initialZoom,
+        minZoom: MapConstants.minZoom,
+        maxZoom: MapConstants.maxZoom,
+        // 関東圏より外へ動かせないように中心を範囲内に拘束する。
+        cameraConstraint: CameraConstraint.containCenter(
+          bounds: MapConstants.bounds,
+        ),
         onLongPress: (_, point) => _onLongPress(context, point),
       ),
       children: [
+        // Positron のシンプルなモノトーン地図をそのまま表示する
+        // （色味補正・ピンクオーバーレイは無し。ふわふわ感は UI 側で表現）。
         TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          urlTemplate: MapConstants.tileUrlTemplate,
+          subdomains: MapConstants.tileSubdomains,
           userAgentPackageName: 'jp.co.starx.atlus',
           tileProvider: NetworkTileProvider(),
         ),
@@ -56,13 +62,20 @@ class MapScreen extends ConsumerWidget {
               ),
           ],
         ),
-        // OpenStreetMap 利用規約に基づく帰属表示（右下）。
+        // 利用規約に基づく帰属表示（右下）：OpenStreetMap と CARTO の両方。
         RichAttributionWidget(
           attributions: [
             TextSourceAttribution(
               'OpenStreetMap contributors',
               onTap: () => launchUrl(
                 Uri.parse('https://www.openstreetmap.org/copyright'),
+                mode: LaunchMode.externalApplication,
+              ),
+            ),
+            TextSourceAttribution(
+              'CARTO',
+              onTap: () => launchUrl(
+                Uri.parse('https://carto.com/attributions'),
                 mode: LaunchMode.externalApplication,
               ),
             ),
